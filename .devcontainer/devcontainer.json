@@ -1,0 +1,39 @@
+{
+  "name": "expo-dev",
+  "build": { "dockerfile": "Dockerfile" },
+  "features": {
+    // JDK。Gradle / AGP が使う。AGP の要件が上がったら version を変える
+    "ghcr.io/devcontainers/features/java:1": { "version": "17" },
+    "ghcr.io/anthropics/devcontainer-features/claude-code:1": {}
+  },
+  // コンテナを WSL のネットワークに直接載せる。
+  // Metro(8081) が WSL の localhost で待ち受け → WSL の localhost 転送で Windows の localhost:8081 に届く
+  // → Windows の adb で `adb reverse tcp:8081 tcp:8081` すればエミュレーター/USB 実機から 127.0.0.1:8081 で接続できる
+  "runArgs": ["--network=host"],
+  "mounts": [
+    // Android SDK 本体。ビルド時に Gradle が必要なバージョンを入れていく。コンテナを作り直しても残す
+    "source=expo-devcontainer-android-sdk,target=/opt/android-sdk,type=volume",
+    // Gradle の依存キャッシュ
+    "source=expo-devcontainer-gradle,target=/home/node/.gradle,type=volume",
+    // Claude Code の設定とログイン情報。コンテナを作り直してもログインし直さなくて済むようにする
+    "source=expo-devcontainer-claude,target=/home/node/.claude,type=volume"
+  ],
+  "containerEnv": {
+    "EXPO_NO_TELEMETRY": "1",
+    // dev client に表示する Metro の URL を adb reverse 前提の 127.0.0.1 にする
+    "REACT_NATIVE_PACKAGER_HOSTNAME": "127.0.0.1",
+    // ~/.claude.json もボリュームの中に置く
+    "CLAUDE_CONFIG_DIR": "/home/node/.claude"
+    // Maestro をコンテナに入れる場合(Dockerfile の Maestro のコメントを外したとき)は、上の行の末尾に , を付けて次のコメントを外す
+    // "MAESTRO_CLI_NO_ANALYTICS": "1",
+    // "MAESTRO_CLI_ANALYSIS_NOTIFICATION_DISABLED": "true"
+  },
+  // Claude Code のボリュームを node ユーザーのものにする。SDK のライセンスに同意してから依存を入れる
+  "postCreateCommand": "sudo chown node:node /home/node/.claude && (yes | sdkmanager --sdk_root=$ANDROID_HOME --licenses > /dev/null); npm install",
+  "customizations": {
+    "vscode": {
+      "extensions": ["expo.vscode-expo-tools"]
+    }
+  },
+  "remoteUser": "node"
+}
