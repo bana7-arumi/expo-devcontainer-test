@@ -1,0 +1,9 @@
+# development build を Metro(adb reverse 済みの 127.0.0.1:8081)につないで、トップ画面が出ることを確認する
+appId: com.example.expodevcontainertest
+---
+- openLink: expodevcontainertest://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081
+# 初めて開いたときだけ出る、開発者メニューの案内を閉じる
+- tapOn:
+    text: Continue
+    optional: true
+- assertVisible: Open up App.tsx to start working on your app!
